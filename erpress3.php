@@ -16,10 +16,33 @@ Copyright 2013 - Euterpia Radio
 License: GPL (http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt)
 */
 
-class WPF2Plugin {
-}
+require('WPF2.php');
 
 class ERPress3 extends WPF2Plugin {
+
+	public function ERPress3() {
+		parent::WPF2Plugin('erpress3');
+	}
+
+	public function getAdminMenu() {
+		return array(
+			'ERPress3' => array(
+				'capability' => 'read',
+				'items' => array(
+					'Summary' => 'summary', 
+					'Artists' => 'artists', 
+					'Albums' => 'albums', 
+					'Tracks' => 'tracks', 
+					'Shows' => 'shows', 
+					'Stats' => 'stats'
+				)
+			)
+		);
+	}
+
+	function handleMenuSummary() {
+		echo "hello menu Summary !";
+	}
 }
 
 new ERPress3();
