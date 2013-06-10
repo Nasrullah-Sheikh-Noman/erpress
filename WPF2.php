@@ -57,8 +57,10 @@ abstract class WPF2Plugin {
 			$className = 'Menu' . $camelSlug;
 			if (class_exists($className)) {
 				$menu = new $className($this);
-				if (is_callable(array($menu, 'handleMenu'))) {
-					call_user_method('handleMenu', $menu);
+				if (is_callable(array($menu, 'wrap'))) {
+					$menu->wrap(function($menu) {
+						$menu->renderPage();
+					});
 				}
 			}
 		}
@@ -76,7 +78,37 @@ abstract class WPF2MenuHandler {
 		$this->plugin = $plugin;
 	}
 
-	abstract public function handleMenu();
+	function wrap($renderPage) {
+?>
+<div class="wrap">
+<?php
+		call_user_func($renderPage, $this);
+?>
+
+<br class="clear">
+</div>
+<?php
+	}
+
+	protected function renderTitle($title, $icon, $actions) {
+		if ($icon != null) {
+			?><div id="icon-<?php echo $icon; ?>" class="icon32"><br></div><?php 
+		}
+		echo sprintf('<h2>%s', $title);
+		foreach ($actions as $label => $action) { 
+			if (is_string($action)) { 
+				$action = array('link' => $action); 
+			}
+			echo sprintf('<a href="%s"', $action['link']);
+			if (isset($action['class'])) {
+				echo sprintf(' class="%s"', $action['class']);
+			}
+			echo sprintf('>%s</a>', $label);
+		}
+		echo '</h2>';
+	}
+
+	abstract public function renderPage();
 }
 
 ?>
