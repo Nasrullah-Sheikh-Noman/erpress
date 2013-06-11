@@ -47,8 +47,10 @@ abstract class WPF2Plugin {
 	final function adminMenu() {
 		$items = $this->getAdminMenu();
 		foreach ($items as $title => $item) {
-			$capability = $item->capability;
-			if (!isset($capability)) $capability = 'read';
+			if (!isset($item['capability'])) {
+				$item['capability'] = 'read';
+			}
+			$capability = $item['capability'];
 			if (count($item['items']) > 0) {
 				$addMenuPage = true;
 				foreach ($item['items'] as $label => $submenu) {

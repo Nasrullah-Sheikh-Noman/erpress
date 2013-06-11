@@ -146,8 +146,18 @@ class WPF2Table extends WPF2Component {
 		println('<tbody>');
 		foreach ($model['data'] as $row) {
 			printf('<tr id="%s">', $row->$model['id']);
-			foreach ($model['columns'] as $id => $column) {
-				printf('<td>%s</td>', $row->$id);	
+			foreach ($model['columns'] as $property => $column) {
+				$value = isset($row->$property) ? $row->$property : null;
+				if (isset($column['renderer'])) {
+					$renderer = $column['renderer'];
+					if (is_callable($renderer)) {
+						$value = call_user_func($renderer, $value, $row);
+					}
+				}
+				else {
+					$value = $row->$property;
+				}
+				printf('<td>%s</td>', $value);
 			}
 			println('</tr>');
 		}
@@ -164,6 +174,8 @@ class WPF2Table extends WPF2Component {
 
 class TableSummary extends WPF2Table {
 
+	private $months = array(1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec');
+
 	public function TableSummary($summaryRow) {
 		parent::WPF2Table();
 		$this->episodeId = $summaryRow->id;
@@ -177,13 +189,21 @@ class TableSummary extends WPF2Table {
 	public function getModel() {
 		global $wpdb;
 
-		$query = $wpdb->prepare('select t.id, t.position, a.name as artist, t.title, b.title as album, "xxx" as publication, s.name as source, "yyy" as previous from wp_erpress2_tracks t, wp_erpress2_artists a, wp_erpress2_albums b, wp_erpress2_sources s where t.episode_id = %d and a.id = t.artist_id and b.id = t.album_id and s.id = b.source_id', $this->episodeId);
+		$query = $wpdb->prepare('select t.id, t.position, a.id as artist_id, a.name as artist, t.title, b.title as album, b.month, b.year, s.name as source, "yyy" as previous from wp_erpress2_tracks t, wp_erpress2_artists a, wp_erpress2_albums b, wp_erpress2_sources s where t.episode_id = %d and a.id = t.artist_id and b.id = t.album_id and s.id = b.source_id', $this->episodeId);
 		$data = $wpdb->get_results($query);
 
 		return array(
 			'columns' => array(
 				'position' => array(
-					'label' => 'Position'
+					'label' => 'Position',
+					'renderer' => function($value) {
+						if ($value == 11) {
+							return 'Flashback';
+						}
+						else {
+							return $value;
+						}
+					}
 				),
 				'artist' => array(
 					'label' => 'Artist'
@@ -195,13 +215,38 @@ class TableSummary extends WPF2Table {
 					'label' => 'Album'
 				),
 				'publication' => array(
-					'label' => 'Publication'
+					'label' => 'Publication',
+					'renderer' => function($value, $row) {
+						$month = $row->month;
+						$year = $row->year;
+						if (($month == null) || ($month == 0)) {
+							return $year;
+						}
+						else {
+							return $this->months[$month] . ' ' . $year;
+						}
+					}
 				),
 				'source' => array(
 					'label' => 'Source'
 				),
 				'previous' => array(
-					'label' => 'Previous'
+					'label' => 'Previous',
+					'renderer' => function($value, $row) use ($wpdb) {
+						$query = $wpdb->prepare('select e.*, e.publication > now() as futur from wp_erpress2_tracks t, wp_erpress2_episodes e where t.artist_id = %d and t.id != %d and e.id = t.episode_id order by e.publication asc', $row->artist_id, $row->id);
+						$rows = $wpdb->get_results($query);
+						$value = '';
+						foreach ($rows as $row) {
+							if ($row->futur == 1) {
+								$value .= '<i>' .$row->name . '</i><br/>';
+							}
+							else {
+								$value .= $row->name . '<br/>';
+							}
+						}
+
+						return $value;
+					}
 				)
 			),
 			'id' => 'id',

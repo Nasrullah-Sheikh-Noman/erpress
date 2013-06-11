@@ -44,11 +44,10 @@ class MenuSummary extends WPF2MenuHandler {
 
 		global $wpdb;
 
-		$status = $_REQUEST['status'];
 		$where = ' where archive = 0';
-		if (isset($status)) {
-			if ($status == 'archived') $where = ' where archive = 1';
-			if ($status == 'all') $where = '';
+		if (isset($_REQUEST['status'])) {
+			if ($_REQUEST['status'] == 'archived') $where = ' where archive = 1';
+			if ($_REQUEST['status'] == 'all') $where = '';
 		}
 		$query = 'select * from wp_erpress2_episodes' . $where . ' order by publication asc';
 		$rows = $wpdb->get_results($query);
